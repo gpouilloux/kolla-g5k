@@ -6,15 +6,30 @@
 name: discovery-kolla
 walltime: "2:00:00"
 
-resources:
-  paravance: 
+templates:
+  temp1:
     control: 1
     compute: 1
     network: 1
-    
+  temp2:
+    compute: 2
+
+resources:
+  paravance: temp1, temp2
+  econome: temp2
+
+# resources:
+#   paravance:
+#     control: 1
+#     compute: 1
+#     network: 1
+#   parapluie:
+#    control: 1
+
 vlans:
-  # mandatory : you need to have exacly one vlan
-  rennes: "{type='kavlan'}/vlan=1"
+  #A noter que l'utilisation d'un kavlan devient implicite puisque nous aurons un kavlan global a recuperer d'un site.
+  # Attention il n'y a qu'un kavlan-global par site, donc il faudra bien mentionné un kavlan different dans le yaml.
+  rennes: "{type='kavlan-global'}/vlan=1"
 
 # Be less strict on node distribution especially
 # when nodes are missing in the reservation
@@ -39,14 +54,14 @@ inventory: inventories/inventory.sample
 # docker registry parameters
 # ############################################### #
 registry:
-  ceph: true 
+  ceph: true
   ceph_keyring: /home/discovery/.ceph/ceph.client.discovery.keyring
   ceph_id: discovery
   ceph_rbd: discovery_kolla_registry/datas
 
 
 # ############################################### #
-# Kolla parameteres (globals.yml)                 # 
+# Kolla parameteres (globals.yml)                 #
 # ############################################### #
 kolla:
   kolla_base_distro: "centos"
