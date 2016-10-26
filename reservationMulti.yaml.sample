@@ -1,0 +1,61 @@
+---
+# ############################################### #
+# Grid'5000 reservation parameters                #
+# ############################################### #
+
+name: discovery-kolla
+walltime: "2:00:00"
+
+templates:
+    temp1:
+        control: 1
+        compute: 1
+        network: 1
+    temp2:
+        compute: 1
+resources:
+    paravance: temp1, temp2
+    econome: temp2
+    
+vlans:
+  # mandatory : you need to have exacly one vlan
+  rennes: "{type='kavlan-global'}/vlan=16"
+
+# Be less strict on node distribution especially
+# when nodes are missing in the reservation
+# or not deployed
+role_distribution: debug
+
+#enable_monitoring: true
+#enable_rally: true
+
+# Enable for Nova to run in /tmp, allowing larger flavors
+# to be deployed
+enable_nova_tmp: false
+
+# ############################################### #
+# Inventory to use                                #
+# ############################################### #
+
+# This will describe the topology of your services
+inventory: inventories/inventory.sample
+
+# ############################################### #
+# docker registry parameters
+# ############################################### #
+registry:
+  ceph: true 
+  ceph_keyring: /home/discovery/.ceph/ceph.client.discovery.keyring
+  ceph_id: discovery
+  ceph_rbd: discovery_kolla_registry/datas
+
+
+# ############################################### #
+# Kolla parameteres (globals.yml)                 # 
+# ############################################### #
+kolla:
+  kolla_base_distro: "centos"
+  kolla_install_type: "source"
+  openstack_release: "3.0.0"
+  docker_namespace: "beyondtheclouds"
+  enable_heat: "no"
