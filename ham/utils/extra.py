@@ -96,20 +96,22 @@ def render_template(template_name, vars, output_path):
     with open(output_path, 'w') as f:
         f.write(rendered_text)
 
-def generate_inventory(roles, base_inventory, dest):
+def generate_inventory(site_roles, base_inventory, dest):
     """
     Generate the inventory.
     It will generate a group for each role in roles and
     concatenate them with the base_inventory file.
     The generated inventory is written in dest
     """
-    with open(dest, 'w') as f:
-        f.write(to_ansible_group_string(roles))
-        with open(base_inventory, 'r') as a:
-            for line in a:
-                f.write(line)
+    for site, roles in site_roles.items():
+        dest_site = "%s-%s" % (dest, site)
+        with open(dest_site, 'w') as f:
+            f.write(to_ansible_group_string(roles))
+            with open(base_inventory, 'r') as a:
+                for line in a:
+                    f.write(line)
 
-    logging.info("Inventory file written to " + dest)
+        logging.info("Inventory file written to " + dest_site)
 
 def to_ansible_group_string(roles):
     """

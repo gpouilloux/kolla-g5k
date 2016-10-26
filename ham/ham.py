@@ -81,8 +81,6 @@ def up(provider=None, env=None, **kwargs):
     # Calls the provider and initialise resources
     rsc,ips,eths = provider.init(env['config'], kwargs['--force-deploy'])
 
-    print rsc
-    sys.exit(1)
     env['rsc'] = rsc
     env['ips'] = ips
     env['eths'] = eths
