@@ -81,8 +81,6 @@ def up(provider=None, env=None, **kwargs):
     # Calls the provider and initialise resources
     rsc,ips,eths = provider.init(env['config'], kwargs['--force-deploy'])
 
-    print rsc
-    sys.exit(1)
     env['rsc'] = rsc
     env['ips'] = ips
     env['eths'] = eths
@@ -125,7 +123,7 @@ def up(provider=None, env=None, **kwargs):
     # installs the registry, install monitoring tools, ...)
     provider.before_preintsall(env)
     up_playbook = os.path.join(ANSIBLE_DIR, 'up.yml')
-    run_ansible([up_playbook], inventory, env['config'], kwargs['--tags'])
+    run_ansible([up_playbook], inventory, env['config'], kwargs.get('--tags', []))
     provider.after_preintsall(env)
 
     # Symlink current directory
@@ -151,6 +149,8 @@ Options:
 def install_os(env=None, **kwargs):
     logging.debug('phase[os]: args=%s' % kwargs)
     # Generates kolla globals.yml, passwords.yml
+
+    # FIXME env['ips'] : ips key not found if not 'ham deploy'
     generated_kolla_vars = {
         # Kolla + common specific
         'neutron_external_address'   : env['ips'][NEUTRON_IP],
@@ -174,7 +174,7 @@ def install_os(env=None, **kwargs):
                      "deprecated with the new version of Kolla"))
 
     playbook = os.path.join(ANSIBLE_DIR, "patches.yml")
-    run_ansible([playbook], env['inventory'], env['config'])
+    run_ansible([playbook], env['inventory'], env['config'], kwargs.get('--tags', []))
 
     kolla_cmd = [os.path.join(kolla_path, "tools", "kolla-ansible")]
 
@@ -187,7 +187,7 @@ def install_os(env=None, **kwargs):
                       "--passwords", "%s/passwords.yml" % SYMLINK_NAME,
                       "--configdir", "%s" % SYMLINK_NAME])
 
-    if kwargs['--tags']:
+    if kwargs.get('--tags') is not None:
         kolla_cmd.extend(['--tags', kwargs['--tags']])
 
     call(kolla_cmd)

@@ -66,7 +66,7 @@ class G5K(Provider):
             logging.error("Some of your nodes have been undeployed")
             sys.exit(31)
 
-        roles = self._build_roles()
+        site_roles = self._build_site_roles()
 
         # Get an IP for
         # kolla (haproxy)
@@ -101,17 +101,21 @@ class G5K(Provider):
             'apt-get -y install python',
             'Installing Python on all the nodes...')
 
-        return (roles,
+        return (site_roles,
                 map(str, vip_addresses),
                 [network_interface, external_interface])
 
     def before_preintsall(self, env):
         # Create a virtual interface for veth0 (if any)
-        nodes = sum(env['rsc'].values(), [])
+        nodes = []
+        for d in env['rsc'].values():
+            for v in d.values():
+                nodes.extend(v)
         if env['eths'][EXTERNAL_IFACE] == 'veth0':
             self._exec_command_on_nodes(
                     nodes,
-                    'ip link show veth0 || ip link add type veth peer')
+                    'ip link show veth0 || ip link add type veth peer',
+                    'Creating a virtual interface for veth0')
 
         #- name: Installing bridge-utils
         #  apt: name=bridge-utils state=present
@@ -340,7 +344,7 @@ class G5K(Provider):
 
         return deployed, undeployed
 
-    def _build_roles(self):
+    def _build_site_roles(self):
         """Returns a dict that maps each role to a list of G5K nodes::
 
           { 'controller': [paravance-1, paravance-5], 'compute':
@@ -361,42 +365,6 @@ class G5K(Provider):
             nodes = pool[:n]
             del pool[:n]
             return nodes
-
-        def compute_roles(pools, templates):
-            templates_list = self.config['templates']
-            roles_list = [templates_list[t].keys() for t in templates] # flatten
-            roles_set = set([item for sublist in roles_list for item in sublist])
-            roles_goal = {k: 0 for k in roles_set}
-            for roles in [templates_list[t] for t in templates]:
-                for r, v in roles.items():
-                    roles_goal[r] = roles_goal[r] + v
-
-            # FIXME still useful? GPO - 25/10/2016
-            # compute the aggregated number of nodes per roles
-            # for r in self.config['resources'].values():
-            #     for k,v in r.items():
-            #         roles_goal[k] = roles_goal[k] + v
-            # ######
-
-            for cluster, rs in roles_goal.items():
-                current = pick_nodes(pools[cluster], 1)
-                for r in rs * len(self.deployed_nodes):
-                    if current == []:
-                        break
-                    if current != []: #and len(roles[r]) < roles_goal[r]:
-                        roles.setdefault(r, []).extend(current)
-                        current = pick_nodes(pools[cluster], 1)
-
-            logging.info("Roles: %s" % pf(roles))
-
-            at_least_one = all(len(n) >= 1 for n in roles.values())
-            if not at_least_one:
-                # Even if we aren't in strict mode we garantee that
-                # there will be at least on node per role
-                raise Exception("Role doesn't have at least one node each")
-
-            return roles
-            # return roles_goal
 
         site_roles = {}
         pools = mk_pools()
@@ -433,46 +401,6 @@ class G5K(Provider):
             site_roles[site] = roles
 
         return site_roles
-
-        # roles_set = set()
-        # for roles in self.config['resources'].values():
-        #     roles_set.update(roles.keys())
-        # roles = {k: [] for k in roles_set}
-        # roles_goal = {k: 0 for k in roles_set}
-
-        # # compute the aggregated number of nodes per roles
-        # for r in self.config['resources'].values():
-        #     for k,v in r.items():
-        #         roles_goal[k] = roles_goal[k] + v
-
-        # for cluster, rs in self.config['resources'].items():
-        #     current = pick_nodes(pools[cluster], 1)
-        #     # distribute node into roles
-        #     for r in rs.keys() * len(self.deployed_nodes):
-        #         if current == []:
-        #             break
-        #         if current != [] and len(roles[r]) < roles_goal[r]:
-        #             roles.setdefault(r, []).extend(current)
-        #             current = pick_nodes(pools[cluster], 1)
-        #
-        # logging.info("Roles: %s" % pf(roles))
-        # at_least_one = all(len(n) >= 1 for n in roles.values())
-        # if not at_least_one:
-        #     # Even if we aren't in strict mode we garantee that
-        #     # there will be at least on node per role
-        #     raise Exception("Role doesn't have at least one node each")
-        #
-        # return roles
-        #
-        # #####
-        # # For each cluster
-        # pools = mk_pools()
-        # sites = {}
-        # for cluster, templates in self.config['resources'].items():
-        #     site = str(EX5.get_cluster_site(cluster))
-        #     templates_list = [x.strip() for x in templates.split(',')]
-        #     sites[site] = compute_roles(pools, templates_list)
-        # print sites
 
     def _get_free_ip(self, count):
         """

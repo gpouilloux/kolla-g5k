@@ -96,7 +96,7 @@ def render_template(template_name, vars, output_path):
     with open(output_path, 'w') as f:
         f.write(rendered_text)
 
-def generate_inventory(roles, base_inventory, dest):
+def generate_inventory(site_roles, base_inventory, dest):
     """
     Generate the inventory.
     It will generate a group for each role in roles and
@@ -104,14 +104,14 @@ def generate_inventory(roles, base_inventory, dest):
     The generated inventory is written in dest
     """
     with open(dest, 'w') as f:
-        f.write(to_ansible_group_string(roles))
+        f.write(to_ansible_group_string(site_roles))
         with open(base_inventory, 'r') as a:
             for line in a:
                 f.write(line)
 
     logging.info("Inventory file written to " + dest)
 
-def to_ansible_group_string(roles):
+def to_ansible_group_string(site_roles):
     """
     Transform a role list (oar) to an ansible list of groups (inventory)
     Make sure the mandatory group are set as well
@@ -130,6 +130,11 @@ def to_ansible_group_string(roles):
     n4
     """
     inventory = []
+    roles = {}
+    for d in site_roles.values():
+        for k, v in d.items():
+            roles.setdefault(k, []).extend(v)
+
     mandatory = [group for group in KOLLA_MANDATORY_GROUPS if group not in roles.keys()]
     for group in mandatory:
         inventory.append("[%s]" % (group))
