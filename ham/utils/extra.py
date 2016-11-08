@@ -131,6 +131,7 @@ def to_ansible_group_string(site_roles):
     """
     inventory = []
     roles = {}
+    # collect the list of roles for each site
     for d in site_roles.values():
         for k, v in d.items():
             roles.setdefault(k, []).extend(v)

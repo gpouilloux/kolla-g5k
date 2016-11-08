@@ -106,11 +106,13 @@ class G5K(Provider):
                 [network_interface, external_interface])
 
     def before_preintsall(self, env):
-        # Create a virtual interface for veth0 (if any)
+
+        # Flatten the list of nodes for each site
         nodes = []
         for d in env['rsc'].values():
             for v in d.values():
                 nodes.extend(v)
+        # Create a virtual interface for veth0 (if any
         if env['eths'][EXTERNAL_IFACE] == 'veth0':
             self._exec_command_on_nodes(
                     nodes,
@@ -153,14 +155,20 @@ class G5K(Provider):
         return 'G5K'
 
     def _compute_resources(self):
+        """Each template defines a number of nodes for each role.
+        This method replaces each usage of templates by their definition,
+        for each site."""
         resources = {}
         for cluster, templates in self.config['resources'].items():
             site = str(EX5.get_cluster_site(cluster))
             templates_list = [x.strip() for x in templates.split(',')]
             templates_def = self.config['templates']
+
             roles_list = [templates_def[t].keys() for t in templates_list]
-            # flatten the list
+            # flatten the list of roles
             roles_set = set([item for sublist in roles_list for item in sublist])
+
+            # computes the number of nodes for each role
             roles_goal = {k: 0 for k in roles_set}
             for roles in [templates_def[t] for t in templates_list]:
                 for r, v in roles.items():
